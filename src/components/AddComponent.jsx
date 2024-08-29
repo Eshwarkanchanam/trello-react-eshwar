@@ -1,17 +1,16 @@
 import { Box, Button, OutlinedInput, Stack } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 
 const AddComponent = ({
-  show,
-  setShow,
   name,
   setName,
   itemName,
   handleCreate,
   placeholder,
 }) => {
+  let [show, setShow] = useState(false);
   return (
     <>
       {!show && (
@@ -27,7 +26,13 @@ const AddComponent = ({
       {show && (
         <Box sx={{ minWidth: "fit-content" }} display={"inline-block"}>
           <Box border={1} sx={{ borderRadius: 1 }}>
-            <Stack sx={{ p: 1 }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreate();
+                setName("");
+              }}
+            >
               <OutlinedInput
                 autoFocus
                 type="text"
@@ -40,19 +45,15 @@ const AddComponent = ({
               <Stack
                 direction={"row"}
                 alignItems={"center"}
-                mt={1}
+                m={1}
                 minWidth={"fit-content"}
               >
-                <Button
-                  variant="contained"
-                  sx={{ mr: 1, minWidth: "fit-content" }}
-                  onClick={handleCreate}
-                >
+                <Button variant="outlined" type="submit">
                   {itemName}
                 </Button>
                 <CloseIcon onClick={() => setShow(false)} />
               </Stack>
-            </Stack>
+            </form>
           </Box>
         </Box>
       )}

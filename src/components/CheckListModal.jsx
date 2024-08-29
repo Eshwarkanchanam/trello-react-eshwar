@@ -1,14 +1,15 @@
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import { useEffect, useState } from "react";
 import {
   createCheckList,
+  deleteCheckList,
   getAllCheckListsOnCard,
-} from "../functions/checklist/fetchCheckList";
+} from "../apis/checklist/fetchCheckList";
 import CheckList from "./CheckList";
 import CreateComponent from "./CreateComponent";
+import { useSnackbar } from "notistack";
 
 const style = {
   position: "absolute",
@@ -23,32 +24,26 @@ const style = {
 };
 
 export default function CheckListModal({ handleClose, cardId, open }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(false);
   const [checkLists, setCheckLists] = useState([]);
-
-  const [addNewCheckList, setAddNewCheckList] = useState(false);
   const [checkListName, setCheckListName] = useState("");
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        setIsLoading(true);
-
         let response = await getAllCheckListsOnCard(cardId);
         if (response.status === 200) {
           let allCheckLists = response.data;
           setCheckLists(allCheckLists);
-          setError(false);
         } else {
           throw new Error("something went wrong");
         }
       } catch (error) {
-        setError(true);
         console.error(error);
-        // yet to create a toast
-      } finally {
-        setIsLoading(false);
+        enqueueSnackbar(error.message, {
+          variant: "error",
+          autoHideDuration: 3000,
+        });
       }
     }
     fetchData();
@@ -65,22 +60,51 @@ export default function CheckListModal({ handleClose, cardId, open }) {
       }
     } catch (error) {
       console.log(error);
-      // yet to create a toast
+      enqueueSnackbar(error.message, {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
+    }
+  }
+
+  async function handleDeleteCheckList(checklistId) {
+    try {
+      enqueueSnackbar("Deleting checklist...", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
+      let response = await deleteCheckList(checklistId);
+      if (response.status === 200) {
+        setCheckLists(
+          checkLists.filter((checklist) => checklist.id !== checklistId)
+        );
+        enqueueSnackbar("Deleted checklist successfully", {
+          variant: "success",
+          autoHideDuration: 3000,
+        });
+      } else {
+        throw new Error("something went wrong");
+      }
+    } catch (error) {
+      console.error(error.message);
+      enqueueSnackbar(error.message, {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   }
 
   return (
     <div>
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
+      <Modal open={open} onClose={handleClose}>
         <Box sx={style} display={"flex"} gap={1}>
           <Box flex={0.6}>
             {checkLists.map((checklist) => (
-              <CheckList key={checklist.id} checklist={checklist} />
+              <CheckList
+                key={checklist.id}
+                checklist={checklist}
+                handleDeleteCheckList={handleDeleteCheckList}
+              />
             ))}
           </Box>
           <Box
@@ -89,26 +113,16 @@ export default function CheckListModal({ handleClose, cardId, open }) {
             flexDirection={"column"}
             alignItems={"center"}
           >
-            <Typography>Add to card</Typography>
-            <Box position={"relative"}>
-              <Button
-                variant="contained"
-                sx={{ my: 1, fontSize: "0.8rem" }}
-                onClick={() => setAddNewCheckList((prev) => !prev)}
-              >
-                checklists
-              </Button>
-              {addNewCheckList && (
-                <CreateComponent
-                  title={"Checklist title"}
-                  placeholder={"enter checklist name"}
-                  name={checkListName}
-                  setName={setCheckListName}
-                  setShow={setAddNewCheckList}
-                  handleCreate={handleCreateCheckList}
-                />
-              )}
-            </Box>
+            <Typography sx={{ mb: 1 }}>Add to card</Typography>
+
+            <CreateComponent
+              buttonName={"CheckLists"}
+              title={"Checklist title"}
+              placeholder={"enter checklist name"}
+              name={checkListName}
+              setName={setCheckListName}
+              handleCreate={handleCreateCheckList}
+            />
           </Box>
         </Box>
       </Modal>

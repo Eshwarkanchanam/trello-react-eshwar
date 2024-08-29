@@ -1,24 +1,22 @@
-import {
-  Box,
-  Button,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { createList, getAllListsInBoard } from "../functions/lists/fetchLists";
 import List from "./List";
-
 
 import HomeIcon from "@mui/icons-material/Home";
 import AddComponent from "./AddComponent";
+import DetailPageSkeleton from "./Skeletons/DetailPageSkeleton";
+import { createList, getAllListsInBoard } from "../apis/lists/fetchLists";
+import { useSnackbar } from "notistack";
 
 const DetailBoardPage = () => {
-  let { boardId } = useParams();
-  let [isLoading, setIsLoading] = useState(false);
-  let [error, setError] = useState(false);
-  let [lists, setLists] = useState([]);
-  let [addNewlist, setAddNewList] = useState(false);
-  let [listName, setListName] = useState("");
+  const { boardId } = useParams();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [lists, setLists] = useState([]);
+  const [listName, setListName] = useState("");
+
+  const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     async function fetchLists() {
@@ -30,15 +28,15 @@ const DetailBoardPage = () => {
         console.log(lists);
 
         setLists(lists);
-        setError(false);
+        setIsError(false);
       } catch (error) {
-        setError(true);
+        setIsError(true);
       } finally {
         setIsLoading(false);
       }
     }
     fetchLists();
-  }, [boardId]);
+  }, []);
 
   async function handleCreateList() {
     if (listName.length === 0) {
@@ -54,45 +52,54 @@ const DetailBoardPage = () => {
         throw new Error("something went wrong");
       }
     } catch (error) {
-      //yet to create a toast
+      enqueueSnackbar(error.message, {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   }
 
+  if (isError) {
+    return <Typography>Something went wrong</Typography>;
+  }
+
   return (
-    <Box>
-      <Link to={"/boards"}>
-        <Button variant="contained" sx={{ mt: 4 }}>
-          <HomeIcon sx={{ mr: 1 }} />
-          <Typography>Boards</Typography>
-        </Button>
-      </Link>
-      {isLoading && <Typography>loading...</Typography>}
-      {error && <Typography>Something went wrong</Typography>}
-      {!isLoading && !error && (
-        <Box
-          sx={{
-            overflowY: "scroll",
-            display: "inline-flex",
-            gap: 1,
-            width: "100vw",
-            mt: 4,
-          }}
-        >
-          {lists.map((list) => (
-            <List list={list} key={list.id} />
-          ))}
-          <AddComponent
-            show={addNewlist}
-            setShow={setAddNewList}
-            itemName={"add list"}
-            name={listName}
-            setName={setListName}
-            handleCreate={handleCreateList}
-            placeholder={"enter new list"}
-          />
+    <>
+      {isLoading && <DetailPageSkeleton />}
+      {!isLoading && (
+        <Box>
+          <Link to={"/boards"}>
+            <Button variant="contained" sx={{ mt: 4, ml: 4 }}>
+              <HomeIcon sx={{ mr: 1 }} />
+              <Typography>Boards</Typography>
+            </Button>
+          </Link>
+
+          <Box
+            sx={{
+              overflowY: "scroll",
+              display: "inline-flex",
+              gap: 1,
+              width: "100vw",
+              mt: 4,
+              pl: 4,
+              scrollbarWidth:'none'
+            }}
+          >
+            {lists.map((list) => (
+              <List list={list} key={list.id} setLists={setLists} />
+            ))}
+            <AddComponent
+              itemName={"add list"}
+              name={listName}
+              setName={setListName}
+              handleCreate={handleCreateList}
+              placeholder={"enter new list"}
+            />
+          </Box>
         </Box>
       )}
-    </Box>
+    </>
   );
 };
 

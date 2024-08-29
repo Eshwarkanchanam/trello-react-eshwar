@@ -1,13 +1,14 @@
 import React, { useState } from "react";
-import { AppBar, Box, Button, Container, Typography } from "@mui/material";
-import CreateBoard from "./CreateBoard";
+import { AppBar, Box, Stack, Typography } from "@mui/material";
 import CreateComponent from "./CreateComponent";
-import { createBoard } from "../functions/boards/fetchBoards";
+import { createBoard } from "../apis/boards/fetchBoards";
 import { useNavigate } from "react-router-dom";
+import { useSnackbar } from "notistack";
+import { FaTrello } from "react-icons/fa";
 
 const Navbar = () => {
-  const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [boardName, setBoardName] = useState("");
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
   async function createNewBoard() {
@@ -16,49 +17,40 @@ const Navbar = () => {
       if (response.status === 200) {
         let board = response.data;
         let boardId = board.id;
+        setBoardName("");
         navigate(`/boards/${boardId}`);
+        enqueueSnackbar("created board successfully", {
+          variant: "success",
+          autoHideDuration: 3000,
+        });
       } else {
         throw new Error("something went wrong, please try again later");
       }
     } catch (error) {
-      console.log(error);
-      // yet to create a toast
+      console.log(error.message);
+      enqueueSnackbar(error.message, {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   }
 
   return (
-    <AppBar sx={{ p: 2, bgcolor: "gray", position: "static" }}>
-      <>
-        <Box sx={{ display: "flex" }}>
-          <Typography variant="h5">Trello</Typography>
-          <Box sx={{ position: "relative" }}>
-            <Button
-              variant="contained"
-              sx={{
-                displayPrint: "inline",
-                ml: 4,
-                color: "black",
-              }}
-              onClick={(e) => {
-                setShowCreateBoard((prev) => !prev);
-              }}
-            >
-              <Typography sx={{ fontSize: "0.8rem" }}>Create board</Typography>
-            </Button>
-            {showCreateBoard && (
-              // <CreateBoard setShowCreateBoard={setShowCreateBoard} />
-              <CreateComponent
-                title={"Board Title"}
-                placeholder={"enter board name"}
-                name={boardName}
-                setName={setBoardName}
-                setShow={setShowCreateBoard}
-                handleCreate={createNewBoard}
-              />
-            )}
-          </Box>
-        </Box>
-      </>
+    <AppBar sx={{ p: 2, bgcolor: "#1D2125", position: "static" }}>
+      <Box sx={{ display: "flex" }}>
+        <Stack variant="h5" direction={'row'} alignItems={'center'} fontSize={20}>
+          <FaTrello style={{marginRight:6}}/> <Typography fontSize={20}>Trello</Typography>
+        </Stack>
+
+        <CreateComponent
+          buttonName={"Create Board"}
+          title={"Board Title"}
+          placeholder={"enter board name"}
+          name={boardName}
+          setName={setBoardName}
+          handleCreate={createNewBoard}
+        />
+      </Box>
     </AppBar>
   );
 };

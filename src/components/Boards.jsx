@@ -1,13 +1,14 @@
 import { Box, Container, Typography } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { getAllBoards } from "../functions/boards/fetchBoards";
+import { getAllBoards } from "../apis/boards/fetchBoards";
 import Board from "./Board";
 import { Link } from "react-router-dom";
+import BoardSkeleton from "./Skeletons/BoardSkeleton";
 
 const Boards = () => {
   let [boards, setBoards] = useState([]);
   let [isLoading, setIsLoading] = useState(false);
-  let [error, setError] = useState(false);
+  let [isError, setIsError] = useState(false);
 
   useEffect(() => {
     async function fetchBoards() {
@@ -17,14 +18,14 @@ const Boards = () => {
         if (response.status === 200) {
           let openedBoards = response.data.filter((board) => !board.closed);
           setBoards(openedBoards);
-          setError(false);
+          setIsError(false);
         } else {
           throw new Error("Something went wrong");
         }
       } catch (error) {
         console.log(error);
 
-        setError(true);
+        setIsError(true);
       } finally {
         setIsLoading(false);
       }
@@ -32,16 +33,18 @@ const Boards = () => {
     fetchBoards();
   }, []);
 
+  if (isError) {
+    return <Typography>Something went wrong</Typography>;
+  }
+
   return (
     <>
       <Box m={4}>
         <Typography variant="h4" sx={{ my: 4 }}>
           Boards
         </Typography>
-        {isLoading && <Typography>Loading...</Typography>}
-        {error && <Typography>Something went wrong</Typography>}
+        {isLoading && <BoardSkeleton />}
         {!isLoading &&
-          !error &&
           boards.map((board) => (
             <Link to={`/boards/${board.id}`} key={board.id}>
               <Board board={board} />
