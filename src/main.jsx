@@ -1,4 +1,4 @@
-import {  StrictMode } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css";
@@ -9,11 +9,13 @@ import {
 } from "react-router-dom";
 import Boards from "./components/Boards.jsx";
 import DetailBoardPage from "./components/DetailBoardPage.jsx";
+import ErrorPage from "./components/ErrorPage.jsx";
 
 let router = createBrowserRouter([
   {
     path: "/",
     element: <Navigate to="/boards" />,
+    errorElement: <ErrorPage />,
   },
   {
     path: "/boards",
