@@ -1,5 +1,5 @@
 import { Box, Button, FormGroup, Typography } from "@mui/material";
-import React, { useState } from "react";
+import React, { useReducer, useState } from "react";
 
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import AddComponent from "./AddComponent";
@@ -12,9 +12,12 @@ import {
 import CheckItem from "./CheckItem";
 import CheckItemsProgress from "./CheckItemsProgress";
 import { useSnackbar } from "notistack";
+import checkItemReducer from "../reducers/checkItemReducer";
 
-const CheckList = ({ checklist, handleDeleteCheckList }) => {
-  const [checkItems, setCheckItems] = useState([...checklist.checkItems]);
+const CheckList = ({ checklist, onDeleteCheckList }) => {
+  const [checkItems, dispatch] = useReducer(checkItemReducer, [
+    ...checklist.checkItems,
+  ]);
   const [addNewCheckItem, setAddNewCheckItem] = useState(false);
   const [checkItemName, setCheckItemName] = useState("");
 
@@ -29,7 +32,10 @@ const CheckList = ({ checklist, handleDeleteCheckList }) => {
       let response = await createCheckItem(checklist.id, checkItemName);
       if (response.status === 200) {
         let checkItem = response.data;
-        setCheckItems((prevCheckItems) => [...prevCheckItems, checkItem]);
+        dispatch({
+          type: "addCheckItem",
+          payload: checkItem,
+        });
       } else {
         throw new Error("something went wrong, please try again later");
       }
@@ -50,9 +56,10 @@ const CheckList = ({ checklist, handleDeleteCheckList }) => {
       });
       let response = await deleteCheckItem(checkListId, checkItemId);
       if (response.status === 200) {
-        setCheckItems(
-          checkItems.filter((checkitem) => checkitem.id !== checkItemId)
-        );
+        dispatch({
+          type: "deleteCheckItem",
+          deletedCheckItemId: checkItemId,
+        });
         enqueueSnackbar("Deleted checkitem successfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -97,14 +104,11 @@ const CheckList = ({ checklist, handleDeleteCheckList }) => {
         }
       }
 
-      setCheckItems(
-        checkItems.map((currCheckItem) => {
-          if (currCheckItem.id === checkItem.id) {
-            currCheckItem.state = checkItem.state;
-          }
-          return { ...currCheckItem };
-        })
-      );
+      dispatch({
+        type: "checkOrUncheckCheckItem",
+        state: checkItem.state,
+        checkItemId: checkItem.id,
+      });
     } catch (error) {
       console.error(error);
     }
@@ -137,7 +141,7 @@ const CheckList = ({ checklist, handleDeleteCheckList }) => {
             sx={{ fontSize: "0.8rem" }}
             onClick={(e) => {
               e.stopPropagation();
-              handleDeleteCheckList(checklist.id);
+              onDeleteCheckList(checklist.id);
             }}
           >
             delete
@@ -149,7 +153,7 @@ const CheckList = ({ checklist, handleDeleteCheckList }) => {
             <CheckItem
               key={checkitem.id}
               checkitem={checkitem}
-              handleDeleteCheckItem={handleDeleteCheckItem}
+              onDeleteCheckItem={handleDeleteCheckItem}
               handleCheckItem={handleCheckItem}
             />
           ))}

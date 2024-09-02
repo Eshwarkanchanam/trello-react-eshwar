@@ -1,5 +1,5 @@
 import { Box, Button, ListItem, Paper, Stack, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import {
   createCard,
   deleteCard,
@@ -9,17 +9,39 @@ import Card from "./Card";
 import AddComponent from "./AddComponent";
 
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import { deleteListById } from "../apis/lists/fetchLists";
 import ListSkeleton from "./Skeletons/ListSkeleton";
 import { useSnackbar } from "notistack";
+import cardsReducer from "../reducers/cardsReducer";
 
-const List = ({ list, setLists }) => {
-  const [cards, setCards] = useState([]);
+const List = ({ list, onDeleteList }) => {
+  const [cards, dispatch] = useReducer(cardsReducer, []);
   const [cardName, setCardName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    async function fetchCards() {
+      try {
+        setIsLoading(true);
+
+        let response = await getAllCardsOnList(list.id);
+        let allCards = response.data;
+        dispatch({
+          type: "fetchCards",
+          payload: allCards,
+        });
+        setIsError(false);
+      } catch (error) {
+        setIsError(true);
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchCards();
+  }, []);
 
   async function handleCreateCard() {
     if (cardName.length === 0) {
@@ -30,36 +52,11 @@ const List = ({ list, setLists }) => {
       let response = await createCard(list.id, cardName);
       if (response.status === 200) {
         let card = response.data;
-        setCards((prevCards) => [...prevCards, card]);
-        setCardName("");
-      } else {
-        throw new Error("something went wrong");
-      }
-    } catch (error) {
-      console.error(error);
-      enqueueSnackbar(error.message, {
-        variant: "error",
-        autoHideDuration: 3000,
-      });
-    }
-  }
-
-  async function handleDeleteList() {
-    try {
-      enqueueSnackbar("Deleting list...", {
-        variant: "error",
-        autoHideDuration: 3000,
-      });
-      let response = await deleteListById(list.id);
-      if (response.status === 200) {
-        let deletedList = response.data;
-        setLists((prevLists) =>
-          prevLists.filter((list) => list.id !== deletedList.id)
-        );
-        enqueueSnackbar("Deleted list Successfully", {
-          variant: "success",
-          autoHideDuration: 3000,
+        dispatch({
+          type: "addCard",
+          payload: card,
         });
+        setCardName("");
       } else {
         throw new Error("something went wrong");
       }
@@ -80,7 +77,10 @@ const List = ({ list, setLists }) => {
       });
       let response = await deleteCard(cardId);
       if (response.status === 200) {
-        setCards(cards.filter((card) => cardId !== card.id));
+        dispatch({
+          type: "deleteCard",
+          deletedCardId: cardId,
+        });
         enqueueSnackbar("Deleted card succesfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -96,23 +96,6 @@ const List = ({ list, setLists }) => {
       });
     }
   }
-
-  useEffect(() => {
-    async function fetchCards() {
-      try {
-        setIsLoading(true);
-        let response = await getAllCardsOnList(list.id);
-        setCards(response.data);
-        setIsError(false);
-      } catch (error) {
-        setIsError(true);
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchCards();
-  }, []);
 
   if (isError) {
     return <Typography>Something went wrong</Typography>;
@@ -145,7 +128,7 @@ const List = ({ list, setLists }) => {
             >
               <Typography>{list.name}</Typography>
               <DeleteForeverIcon
-                onClick={handleDeleteList}
+                onClick={() => onDeleteList(list.id)}
                 sx={{
                   ":hover": {
                     color: "red",
@@ -156,7 +139,7 @@ const List = ({ list, setLists }) => {
               />
             </Box>
             {cards.map((card) => (
-              <Card key={card.id} card={card} handleDelete={handleDeleteCard} />
+              <Card key={card.id} card={card} onDeleteCard={handleDeleteCard} />
             ))}
             <AddComponent
               itemName={"add card"}

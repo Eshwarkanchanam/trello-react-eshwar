@@ -3,7 +3,7 @@ import React from "react";
 import CheckListModal from "./CheckListModal";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
-const Card = ({ card, handleDelete }) => {
+const Card = ({ card, onDeleteCard }) => {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -29,7 +29,7 @@ const Card = ({ card, handleDelete }) => {
         <Box
           onClick={(e) => {
             e.stopPropagation();
-            handleDelete(card.id);
+            onDeleteCard(card.id);
           }}
         >
           <DeleteForeverIcon
@@ -46,7 +46,7 @@ const Card = ({ card, handleDelete }) => {
       </Box>
       {open && (
         <CheckListModal
-          handleClose={handleClose}
+          onClose={handleClose}
           open={open}
           cardId={card.id}
         />

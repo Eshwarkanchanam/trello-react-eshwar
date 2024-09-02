@@ -1,12 +1,13 @@
 import { Box, Container, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useReducer, useState } from "react";
 import { getAllBoards } from "../apis/boards/fetchBoards";
 import Board from "./Board";
 import { Link } from "react-router-dom";
 import BoardSkeleton from "./Skeletons/BoardSkeleton";
+import boardsReducers from "../reducers/boardsReducer";
 
 const Boards = () => {
-  let [boards, setBoards] = useState([]);
+  let [boards, dispatch] = useReducer(boardsReducers, []);
   let [isLoading, setIsLoading] = useState(false);
   let [isError, setIsError] = useState(false);
 
@@ -17,7 +18,10 @@ const Boards = () => {
         let response = await getAllBoards();
         if (response.status === 200) {
           let openedBoards = response.data.filter((board) => !board.closed);
-          setBoards(openedBoards);
+          dispatch({
+            type: "fetchBoards",
+            payload: openedBoards,
+          });
           setIsError(false);
         } else {
           throw new Error("Something went wrong");

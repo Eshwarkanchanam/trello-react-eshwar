@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   createCheckList,
   deleteCheckList,
@@ -10,6 +10,7 @@ import {
 import CheckList from "./CheckList";
 import CreateComponent from "./CreateComponent";
 import { useSnackbar } from "notistack";
+import checkListReducer from "../reducers/checkListReducer";
 
 const style = {
   position: "absolute",
@@ -23,8 +24,8 @@ const style = {
   p: 4,
 };
 
-export default function CheckListModal({ handleClose, cardId, open }) {
-  const [checkLists, setCheckLists] = useState([]);
+export default function CheckListModal({ onClose, cardId, open }) {
+  const [checkLists, dispatch] = useReducer(checkListReducer, []);
   const [checkListName, setCheckListName] = useState("");
   const { enqueueSnackbar } = useSnackbar();
 
@@ -34,7 +35,10 @@ export default function CheckListModal({ handleClose, cardId, open }) {
         let response = await getAllCheckListsOnCard(cardId);
         if (response.status === 200) {
           let allCheckLists = response.data;
-          setCheckLists(allCheckLists);
+          dispatch({
+            type: "fetchCheckLists",
+            payload: allCheckLists,
+          });
         } else {
           throw new Error("something went wrong");
         }
@@ -54,7 +58,10 @@ export default function CheckListModal({ handleClose, cardId, open }) {
       let response = await createCheckList(cardId, checkListName);
       if (response.status === 200) {
         let checkList = response.data;
-        setCheckLists((prevCheckLists) => [...prevCheckLists, checkList]);
+        dispatch({
+          type: "addCheckList",
+          payload: checkList,
+        });
       } else {
         throw new Error("something went wrong, please try again later");
       }
@@ -75,9 +82,10 @@ export default function CheckListModal({ handleClose, cardId, open }) {
       });
       let response = await deleteCheckList(checklistId);
       if (response.status === 200) {
-        setCheckLists(
-          checkLists.filter((checklist) => checklist.id !== checklistId)
-        );
+        dispatch({
+          type: "deleteCheckList",
+          deletedCheckListId: checklistId,
+        });
         enqueueSnackbar("Deleted checklist successfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -96,14 +104,14 @@ export default function CheckListModal({ handleClose, cardId, open }) {
 
   return (
     <div>
-      <Modal open={open} onClose={handleClose}>
+      <Modal open={open} onClose={onClose}>
         <Box sx={style} display={"flex"} gap={1}>
           <Box flex={0.6}>
             {checkLists.map((checklist) => (
               <CheckList
                 key={checklist.id}
                 checklist={checklist}
-                handleDeleteCheckList={handleDeleteCheckList}
+                onDeleteCheckList={handleDeleteCheckList}
               />
             ))}
           </Box>

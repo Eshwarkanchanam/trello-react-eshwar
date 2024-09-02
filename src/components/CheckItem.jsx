@@ -2,7 +2,7 @@ import { Box, Checkbox, FormControlLabel, Stack } from "@mui/material";
 import React from "react";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
-const CheckItem = ({ checkitem, handleDeleteCheckItem, handleCheckItem }) => {
+const CheckItem = ({ checkitem, onDeleteCheckItem, handleCheckItem }) => {
   return (
     <Stack
       sx={{ border: 1, borderRadius: 1 }}
@@ -29,7 +29,7 @@ const CheckItem = ({ checkitem, handleDeleteCheckItem, handleCheckItem }) => {
         component={"span"}
         onClick={(e) => {
           e.stopPropagation();
-          handleDeleteCheckItem(checkitem.idChecklist, checkitem.id);
+          onDeleteCheckItem(checkitem.idChecklist, checkitem.id);
         }}
         sx={{ mr: 1 }}
       >
