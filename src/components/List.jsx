@@ -25,14 +25,17 @@ const List = ({ list, onDeleteList }) => {
     async function fetchCards() {
       try {
         setIsLoading(true);
-
         let response = await getAllCardsOnList(list.id);
-        let allCards = response.data;
-        dispatch({
-          type: "fetchCards",
-          payload: allCards,
-        });
-        setIsError(false);
+        if (response.status === 200) {
+          let allCards = response.data;
+          dispatch({
+            type: "fetchCards",
+            payload: allCards,
+          });
+          setIsError(false);
+        } else {
+          throw new Error("something went wrong");
+        }
       } catch (error) {
         setIsError(true);
         console.error(error);
