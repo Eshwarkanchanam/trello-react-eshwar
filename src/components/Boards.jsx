@@ -4,40 +4,48 @@ import { getAllBoards } from "../apis/boards/fetchBoards";
 import Board from "./Board";
 import { Link } from "react-router-dom";
 import BoardSkeleton from "./Skeletons/BoardSkeleton";
-import boardsReducers from "../reducers/boardsReducer";
+import boardsReducers, {
+  FETCH_BOARDS,
+  FETCH_BOARDS_ERROR,
+  FETCH_BOARDS_LOADING,
+} from "../reducers/boardsReducer";
 
 const Boards = () => {
-  let [boards, dispatch] = useReducer(boardsReducers, []);
-  let [isLoading, setIsLoading] = useState(false);
-  let [isError, setIsError] = useState(false);
+  let [boards, dispatch] = useReducer(boardsReducers, {
+    loading: false,
+    data: [],
+    error: "",
+  });
 
   useEffect(() => {
     async function fetchBoards() {
       try {
-        setIsLoading(true);
+        dispatch({
+          type: FETCH_BOARDS_LOADING,
+        });
         let response = await getAllBoards();
         if (response.status === 200) {
           let openedBoards = response.data.filter((board) => !board.closed);
           dispatch({
-            type: "fetchBoards",
+            type: FETCH_BOARDS,
             payload: openedBoards,
           });
-          setIsError(false);
         } else {
           throw new Error("Something went wrong");
         }
       } catch (error) {
         console.log(error);
 
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
+        dispatch({
+          type: FETCH_BOARDS_ERROR,
+          payload: error,
+        });
       }
     }
     fetchBoards();
   }, []);
 
-  if (isError) {
+  if (boards.error) {
     return <Typography>Something went wrong</Typography>;
   }
 
@@ -47,9 +55,9 @@ const Boards = () => {
         <Typography variant="h4" sx={{ my: 4 }}>
           Boards
         </Typography>
-        {isLoading && <BoardSkeleton />}
-        {!isLoading &&
-          boards.map((board) => (
+        {boards.loading && <BoardSkeleton />}
+        {!boards.loading &&
+          boards.data.map((board) => (
             <Link to={`/boards/${board.id}`} key={board.id}>
               <Board board={board} />
             </Link>

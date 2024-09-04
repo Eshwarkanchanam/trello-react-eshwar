@@ -10,7 +10,11 @@ import {
 import CheckList from "./CheckList";
 import CreateComponent from "./CreateComponent";
 import { useSnackbar } from "notistack";
-import checkListReducer from "../reducers/checkListReducer";
+import checkListReducer, {
+  ADD_CHECKLIST,
+  DELETE_CHECKLIST,
+  FETCH_CHECKLIST,
+} from "../reducers/checkListReducer";
 
 const style = {
   position: "absolute",
@@ -36,7 +40,7 @@ export default function CheckListModal({ onClose, cardId, open }) {
         if (response.status === 200) {
           let allCheckLists = response.data;
           dispatch({
-            type: "fetchCheckLists",
+            type: FETCH_CHECKLIST,
             payload: allCheckLists,
           });
         } else {
@@ -51,7 +55,7 @@ export default function CheckListModal({ onClose, cardId, open }) {
       }
     }
     fetchData();
-  }, []);
+  }, [cardId]);
 
   async function handleCreateCheckList() {
     try {
@@ -59,7 +63,7 @@ export default function CheckListModal({ onClose, cardId, open }) {
       if (response.status === 200) {
         let checkList = response.data;
         dispatch({
-          type: "addCheckList",
+          type: ADD_CHECKLIST,
           payload: checkList,
         });
       } else {
@@ -83,8 +87,8 @@ export default function CheckListModal({ onClose, cardId, open }) {
       let response = await deleteCheckList(checklistId);
       if (response.status === 200) {
         dispatch({
-          type: "deleteCheckList",
-          deletedCheckListId: checklistId,
+          type: DELETE_CHECKLIST,
+          payload: checklistId,
         });
         enqueueSnackbar("Deleted checklist successfully", {
           variant: "success",

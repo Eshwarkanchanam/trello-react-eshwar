@@ -12,7 +12,11 @@ import {
 import CheckItem from "./CheckItem";
 import CheckItemsProgress from "./CheckItemsProgress";
 import { useSnackbar } from "notistack";
-import checkItemReducer from "../reducers/checkItemReducer";
+import checkItemReducer, {
+  ADD_CHECKITEM,
+  CHECK_OR_UNCHECK_CHECKITEM,
+  DELETE_CHECKITEM,
+} from "../reducers/checkItemReducer";
 
 const CheckList = ({ checklist, onDeleteCheckList }) => {
   const [checkItems, dispatch] = useReducer(checkItemReducer, [
@@ -33,7 +37,7 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
       if (response.status === 200) {
         let checkItem = response.data;
         dispatch({
-          type: "addCheckItem",
+          type: ADD_CHECKITEM,
           payload: checkItem,
         });
       } else {
@@ -57,8 +61,8 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
       let response = await deleteCheckItem(checkListId, checkItemId);
       if (response.status === 200) {
         dispatch({
-          type: "deleteCheckItem",
-          deletedCheckItemId: checkItemId,
+          type: DELETE_CHECKITEM,
+          payload: checkItemId,
         });
         enqueueSnackbar("Deleted checkitem successfully", {
           variant: "success",
@@ -105,12 +109,18 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
       }
 
       dispatch({
-        type: "checkOrUncheckCheckItem",
-        state: checkItem.state,
-        checkItemId: checkItem.id,
+        type: CHECK_OR_UNCHECK_CHECKITEM,
+        payload: {
+          state: checkItem.state,
+          checkItemId: checkItem.id,
+        },
       });
     } catch (error) {
       console.error(error);
+      enqueueSnackbar(error.message, {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     }
   }
 

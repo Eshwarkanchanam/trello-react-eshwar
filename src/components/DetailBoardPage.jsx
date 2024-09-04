@@ -12,13 +12,21 @@ import {
   getAllListsInBoard,
 } from "../apis/lists/fetchLists";
 import { useSnackbar } from "notistack";
-import listsReducer from "../reducers/listsReducer";
+import listsReducer, {
+  ADD_LIST,
+  DELETE_LIST,
+  FETCH_LISTS,
+  FETCH_LISTS_ERROR,
+  FETCH_LISTS_LOADING,
+} from "../reducers/listsReducer";
 
 const DetailBoardPage = () => {
   const { boardId } = useParams();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [lists, dispatch] = useReducer(listsReducer, []);
+  const [lists, dispatch] = useReducer(listsReducer, {
+    loading: false,
+    data: [],
+    error: "",
+  });
   const [listName, setListName] = useState("");
 
   const { enqueueSnackbar } = useSnackbar();
@@ -26,24 +34,22 @@ const DetailBoardPage = () => {
   useEffect(() => {
     async function fetchLists() {
       try {
-        setIsLoading(true);
-
+        dispatch({
+          type: FETCH_LISTS_LOADING,
+        });
         let response = await getAllListsInBoard(boardId);
         if (response.status === 200) {
           let lists = response.data;
           console.log(lists);
           dispatch({
-            type: "fetchLists",
+            type: FETCH_LISTS,
             payload: lists,
           });
-          setIsError(false);
         } else {
           throw new Error("something went wrong");
         }
       } catch (error) {
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
+        dispatch({ type: FETCH_LISTS_ERROR, payload: error });
       }
     }
     fetchLists();
@@ -58,7 +64,7 @@ const DetailBoardPage = () => {
       if (response.status === 200) {
         let list = response.data;
         dispatch({
-          type: "addList",
+          type: ADD_LIST,
           payload: list,
         });
         setListName("");
@@ -81,10 +87,9 @@ const DetailBoardPage = () => {
       });
       let response = await deleteListById(listId);
       if (response.status === 200) {
-        let deletedList = response.data;
         dispatch({
-          type: "deleteList",
-          deletedId: deletedList.id,
+          type: DELETE_LIST,
+          payload: listId,
         });
         enqueueSnackbar("Deleted list Successfully", {
           variant: "success",
@@ -102,14 +107,14 @@ const DetailBoardPage = () => {
     }
   }
 
-  if (isError) {
+  if (lists.error) {
     return <Typography>Something went wrong</Typography>;
   }
 
   return (
     <>
-      {isLoading && <DetailPageSkeleton />}
-      {!isLoading && (
+      {lists.loading && <DetailPageSkeleton />}
+      {!lists.loading && (
         <Box>
           <Link to={"/boards"}>
             <Button variant="contained" sx={{ mt: 4, ml: 4 }}>
@@ -129,7 +134,7 @@ const DetailBoardPage = () => {
               scrollbarWidth: "none",
             }}
           >
-            {lists.map((list) => (
+            {lists.data.map((list) => (
               <List list={list} key={list.id} onDeleteList={handleDeleteList} />
             ))}
             <AddComponent

@@ -11,36 +11,44 @@ import AddComponent from "./AddComponent";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import ListSkeleton from "./Skeletons/ListSkeleton";
 import { useSnackbar } from "notistack";
-import cardsReducer from "../reducers/cardsReducer";
+import cardsReducer, {
+  ADD_CARD,
+  DELETE_CARD,
+  FETCH_CARDS,
+  FETCH_CARDS_ERROR,
+  FETCH_CARDS_LOADING,
+} from "../reducers/cardsReducer";
 
 const List = ({ list, onDeleteList }) => {
-  const [cards, dispatch] = useReducer(cardsReducer, []);
+  const [cards, dispatch] = useReducer(cardsReducer, {
+    loading: false,
+    data: [],
+    error: "",
+  });
+
   const [cardName, setCardName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
 
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
     async function fetchCards() {
       try {
-        setIsLoading(true);
+        dispatch({
+          type: FETCH_CARDS_LOADING,
+        });
         let response = await getAllCardsOnList(list.id);
         if (response.status === 200) {
           let allCards = response.data;
           dispatch({
-            type: "fetchCards",
+            type: FETCH_CARDS,
             payload: allCards,
           });
-          setIsError(false);
         } else {
           throw new Error("something went wrong");
         }
       } catch (error) {
-        setIsError(true);
         console.error(error);
-      } finally {
-        setIsLoading(false);
+        dispatch({ type: FETCH_CARDS_ERROR, payload: error });
       }
     }
     fetchCards();
@@ -56,7 +64,7 @@ const List = ({ list, onDeleteList }) => {
       if (response.status === 200) {
         let card = response.data;
         dispatch({
-          type: "addCard",
+          type: ADD_CARD,
           payload: card,
         });
         setCardName("");
@@ -81,8 +89,8 @@ const List = ({ list, onDeleteList }) => {
       let response = await deleteCard(cardId);
       if (response.status === 200) {
         dispatch({
-          type: "deleteCard",
-          deletedCardId: cardId,
+          type: DELETE_CARD,
+          payload: cardId,
         });
         enqueueSnackbar("Deleted card succesfully", {
           variant: "success",
@@ -100,14 +108,14 @@ const List = ({ list, onDeleteList }) => {
     }
   }
 
-  if (isError) {
+  if (cards.error) {
     return <Typography>Something went wrong</Typography>;
   }
 
   return (
     <>
-      {isLoading && <ListSkeleton />}
-      {!isLoading && (
+      {cards.loading && <ListSkeleton />}
+      {!cards.loading && (
         <Box>
           <Box
             sx={{
@@ -141,7 +149,7 @@ const List = ({ list, onDeleteList }) => {
                 }}
               />
             </Box>
-            {cards.map((card) => (
+            {cards.data.map((card) => (
               <Card key={card.id} card={card} onDeleteCard={handleDeleteCard} />
             ))}
             <AddComponent
