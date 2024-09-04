@@ -29,13 +29,17 @@ const DetailBoardPage = () => {
         setIsLoading(true);
 
         let response = await getAllListsInBoard(boardId);
-        let lists = response.data;
-        console.log(lists);
-        dispatch({
-          type: "fetchLists",
-          payload: lists,
-        });
-        setIsError(false);
+        if (response.status === 200) {
+          let lists = response.data;
+          console.log(lists);
+          dispatch({
+            type: "fetchLists",
+            payload: lists,
+          });
+          setIsError(false);
+        } else {
+          throw new Error("something went wrong");
+        }
       } catch (error) {
         setIsError(true);
       } finally {
