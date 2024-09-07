@@ -3,7 +3,6 @@ import React, { useEffect, useReducer, useState } from "react";
 import {
   createCard,
   deleteCard,
-  getAllCardsOnList,
 } from "../apis/cards/fetchCards";
 import Card from "./Card";
 import AddComponent from "./AddComponent";
@@ -11,47 +10,24 @@ import AddComponent from "./AddComponent";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import ListSkeleton from "./Skeletons/ListSkeleton";
 import { useSnackbar } from "notistack";
-import cardsReducer, {
-  ADD_CARD,
-  DELETE_CARD,
-  FETCH_CARDS,
-  FETCH_CARDS_ERROR,
-  FETCH_CARDS_LOADING,
-} from "../reducers/cardsReducer";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchCards,
+  addCard,
+  deleteCard as deleteCardAction,
+} from "../features/card/cardSlice";
 
 const List = ({ list, onDeleteList }) => {
-  const [cards, dispatch] = useReducer(cardsReducer, {
-    loading: false,
-    data: [],
-    error: "",
-  });
+
+  const { loading, cards, error } = useSelector((state) => state.card);
+  const dispatch = useDispatch();
 
   const [cardName, setCardName] = useState("");
 
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    async function fetchCards() {
-      try {
-        dispatch({
-          type: FETCH_CARDS_LOADING,
-        });
-        let response = await getAllCardsOnList(list.id);
-        if (response.status === 200) {
-          let allCards = response.data;
-          dispatch({
-            type: FETCH_CARDS,
-            payload: allCards,
-          });
-        } else {
-          throw new Error("something went wrong");
-        }
-      } catch (error) {
-        console.error(error);
-        dispatch({ type: FETCH_CARDS_ERROR, payload: error });
-      }
-    }
-    fetchCards();
+    dispatch(fetchCards(list.id));
   }, []);
 
   async function handleCreateCard() {
@@ -63,10 +39,7 @@ const List = ({ list, onDeleteList }) => {
       let response = await createCard(list.id, cardName);
       if (response.status === 200) {
         let card = response.data;
-        dispatch({
-          type: ADD_CARD,
-          payload: card,
-        });
+        dispatch(addCard(card));
         setCardName("");
       } else {
         throw new Error("something went wrong");
@@ -80,7 +53,7 @@ const List = ({ list, onDeleteList }) => {
     }
   }
 
-  async function handleDeleteCard(cardId) {
+  async function handleDeleteCard(cardId, listId) {
     try {
       enqueueSnackbar("Deleting card...", {
         variant: "error",
@@ -88,10 +61,12 @@ const List = ({ list, onDeleteList }) => {
       });
       let response = await deleteCard(cardId);
       if (response.status === 200) {
-        dispatch({
-          type: DELETE_CARD,
-          payload: cardId,
-        });
+        dispatch(
+          deleteCardAction({
+            cardId,
+            listId,
+          })
+        );
         enqueueSnackbar("Deleted card succesfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -108,14 +83,14 @@ const List = ({ list, onDeleteList }) => {
     }
   }
 
-  if (cards.error) {
+  if (error) {
     return <Typography>Something went wrong</Typography>;
   }
 
   return (
     <>
-      {cards.loading && <ListSkeleton />}
-      {!cards.loading && (
+      {loading && <ListSkeleton />}
+      {!loading && (
         <Box>
           <Box
             sx={{
@@ -149,7 +124,7 @@ const List = ({ list, onDeleteList }) => {
                 }}
               />
             </Box>
-            {cards.data.map((card) => (
+            {cards[list.id]?.map((card) => (
               <Card key={card.id} card={card} onDeleteCard={handleDeleteCard} />
             ))}
             <AddComponent

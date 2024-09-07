@@ -4,14 +4,18 @@ import { Outlet } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import { ErrorBoundary } from "react-error-boundary";
 import Fallback from "./components/Fallback";
+import { Provider } from "react-redux";
+import { store } from "./app/store";
 
 const App = () => {
   return (
     <>
       <ErrorBoundary FallbackComponent={Fallback}>
         <SnackbarProvider maxSnack={1}>
-          <Navbar />
-          <Outlet />
+          <Provider store={store}>
+            <Navbar />
+            <Outlet />
+          </Provider>
         </SnackbarProvider>
       </ErrorBoundary>
     </>

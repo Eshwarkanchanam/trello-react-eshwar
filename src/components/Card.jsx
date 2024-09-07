@@ -1,4 +1,4 @@
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import React from "react";
 import CheckListModal from "./CheckListModal";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -29,7 +29,7 @@ const Card = ({ card, onDeleteCard }) => {
         <Box
           onClick={(e) => {
             e.stopPropagation();
-            onDeleteCard(card.id);
+            onDeleteCard(card.id,card.idList);
           }}
         >
           <DeleteForeverIcon

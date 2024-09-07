@@ -5,16 +5,17 @@ import { useEffect, useReducer, useState } from "react";
 import {
   createCheckList,
   deleteCheckList,
-  getAllCheckListsOnCard,
 } from "../apis/checklist/fetchCheckList";
 import CheckList from "./CheckList";
 import CreateComponent from "./CreateComponent";
 import { useSnackbar } from "notistack";
-import checkListReducer, {
-  ADD_CHECKLIST,
-  DELETE_CHECKLIST,
-  FETCH_CHECKLIST,
-} from "../reducers/checkListReducer";
+
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchChecklists,
+  addChecklist,
+  deleteChecklist as deleteChecklistAction,
+} from "../features/checklist/checklistSlice";
 
 const style = {
   position: "absolute",
@@ -29,32 +30,13 @@ const style = {
 };
 
 export default function CheckListModal({ onClose, cardId, open }) {
-  const [checkLists, dispatch] = useReducer(checkListReducer, []);
+  const { checklists, error } = useSelector((state) => state.checklist);
+  let dispatch = useDispatch();
   const [checkListName, setCheckListName] = useState("");
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        let response = await getAllCheckListsOnCard(cardId);
-        if (response.status === 200) {
-          let allCheckLists = response.data;
-          dispatch({
-            type: FETCH_CHECKLIST,
-            payload: allCheckLists,
-          });
-        } else {
-          throw new Error("something went wrong");
-        }
-      } catch (error) {
-        console.error(error);
-        enqueueSnackbar(error.message, {
-          variant: "error",
-          autoHideDuration: 3000,
-        });
-      }
-    }
-    fetchData();
+    dispatch(fetchChecklists(cardId));
   }, [cardId]);
 
   async function handleCreateCheckList() {
@@ -62,10 +44,7 @@ export default function CheckListModal({ onClose, cardId, open }) {
       let response = await createCheckList(cardId, checkListName);
       if (response.status === 200) {
         let checkList = response.data;
-        dispatch({
-          type: ADD_CHECKLIST,
-          payload: checkList,
-        });
+        dispatch(addChecklist(checkList));
       } else {
         throw new Error("something went wrong, please try again later");
       }
@@ -78,7 +57,7 @@ export default function CheckListModal({ onClose, cardId, open }) {
     }
   }
 
-  async function handleDeleteCheckList(checklistId) {
+  async function handleDeleteCheckList(checklistId, cardId) {
     try {
       enqueueSnackbar("Deleting checklist...", {
         variant: "error",
@@ -86,10 +65,12 @@ export default function CheckListModal({ onClose, cardId, open }) {
       });
       let response = await deleteCheckList(checklistId);
       if (response.status === 200) {
-        dispatch({
-          type: DELETE_CHECKLIST,
-          payload: checklistId,
-        });
+        dispatch(
+          deleteChecklistAction({
+            checklistId,
+            cardId,
+          })
+        );
         enqueueSnackbar("Deleted checklist successfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -106,12 +87,15 @@ export default function CheckListModal({ onClose, cardId, open }) {
     }
   }
 
+  if (error) {
+  }
+
   return (
     <div>
       <Modal open={open} onClose={onClose}>
         <Box sx={style} display={"flex"} gap={1}>
           <Box flex={0.6}>
-            {checkLists.map((checklist) => (
+            {checklists[cardId]?.map((checklist) => (
               <CheckList
                 key={checklist.id}
                 checklist={checklist}

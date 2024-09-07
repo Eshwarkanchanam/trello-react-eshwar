@@ -3,6 +3,8 @@ import React from "react";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 
 const CheckItem = ({ checkitem, onDeleteCheckItem, handleCheckItem }) => {
+  // console.log(checkitem.id);
+  
   return (
     <Stack
       sx={{ border: 1, borderRadius: 1 }}

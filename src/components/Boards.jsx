@@ -1,51 +1,25 @@
-import { Box, Container, Typography } from "@mui/material";
-import React, { useEffect, useReducer, useState } from "react";
-import { getAllBoards } from "../apis/boards/fetchBoards";
+import { Box, Typography } from "@mui/material";
+import React, { useEffect } from "react";
 import Board from "./Board";
 import { Link } from "react-router-dom";
 import BoardSkeleton from "./Skeletons/BoardSkeleton";
-import boardsReducers, {
-  FETCH_BOARDS,
-  FETCH_BOARDS_ERROR,
-  FETCH_BOARDS_LOADING,
-} from "../reducers/boardsReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBoards } from "../features/board/boardSlice";
+import { enqueueSnackbar } from "notistack";
 
 const Boards = () => {
-  let [boards, dispatch] = useReducer(boardsReducers, {
-    loading: false,
-    data: [],
-    error: "",
-  });
+  let { loading, error, boards } = useSelector((state) => state.board);
+  let dispatch = useDispatch();
 
   useEffect(() => {
-    async function fetchBoards() {
-      try {
-        dispatch({
-          type: FETCH_BOARDS_LOADING,
-        });
-        let response = await getAllBoards();
-        if (response.status === 200) {
-          let openedBoards = response.data.filter((board) => !board.closed);
-          dispatch({
-            type: FETCH_BOARDS,
-            payload: openedBoards,
-          });
-        } else {
-          throw new Error("Something went wrong");
-        }
-      } catch (error) {
-        console.log(error);
-
-        dispatch({
-          type: FETCH_BOARDS_ERROR,
-          payload: error,
-        });
-      }
-    }
-    fetchBoards();
+    dispatch(fetchBoards());
   }, []);
 
-  if (boards.error) {
+  if (error) {
+    enqueueSnackbar(boardState.error, {
+      variant: "error",
+      autoHideDuration: 3000,
+    });
     return <Typography>Something went wrong</Typography>;
   }
 
@@ -55,9 +29,9 @@ const Boards = () => {
         <Typography variant="h4" sx={{ my: 4 }}>
           Boards
         </Typography>
-        {boards.loading && <BoardSkeleton />}
-        {!boards.loading &&
-          boards.data.map((board) => (
+        {loading && <BoardSkeleton />}
+        {!loading &&
+          boards.map((board) => (
             <Link to={`/boards/${board.id}`} key={board.id}>
               <Board board={board} />
             </Link>

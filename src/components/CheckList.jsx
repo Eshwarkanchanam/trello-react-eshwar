@@ -1,5 +1,5 @@
 import { Box, Button, FormGroup, Typography } from "@mui/material";
-import React, { useReducer, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import AddComponent from "./AddComponent";
@@ -12,20 +12,28 @@ import {
 import CheckItem from "./CheckItem";
 import CheckItemsProgress from "./CheckItemsProgress";
 import { useSnackbar } from "notistack";
-import checkItemReducer, {
-  ADD_CHECKITEM,
-  CHECK_OR_UNCHECK_CHECKITEM,
-  DELETE_CHECKITEM,
-} from "../reducers/checkItemReducer";
+import { useDispatch, useSelector } from "react-redux";
+
+import {
+  createCheckitems,
+  addCheckitem,
+  deleteCheckitem as deleteCheckitemAction,
+  checkOrUncheckItem,
+} from "../features/checkitems/checkitemSlice";
 
 const CheckList = ({ checklist, onDeleteCheckList }) => {
-  const [checkItems, dispatch] = useReducer(checkItemReducer, [
-    ...checklist.checkItems,
-  ]);
+
   const [addNewCheckItem, setAddNewCheckItem] = useState(false);
   const [checkItemName, setCheckItemName] = useState("");
 
   const { enqueueSnackbar } = useSnackbar();
+
+  const { checkitems, error } = useSelector((state) => state.checkitem);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(createCheckitems(checklist));
+  }, []);
 
   async function handleCreateCheckItem() {
     if (checkItemName.length === 0) {
@@ -36,10 +44,7 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
       let response = await createCheckItem(checklist.id, checkItemName);
       if (response.status === 200) {
         let checkItem = response.data;
-        dispatch({
-          type: ADD_CHECKITEM,
-          payload: checkItem,
-        });
+        dispatch(addCheckitem(checkItem));
       } else {
         throw new Error("something went wrong, please try again later");
       }
@@ -60,10 +65,12 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
       });
       let response = await deleteCheckItem(checkListId, checkItemId);
       if (response.status === 200) {
-        dispatch({
-          type: DELETE_CHECKITEM,
-          payload: checkItemId,
-        });
+        dispatch(
+          deleteCheckitemAction({
+            checkListId,
+            checkItemId,
+          })
+        );
         enqueueSnackbar("Deleted checkitem successfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -81,10 +88,19 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
   }
 
   async function handleCheckItem(checkItemId) {
+    console.log(checkItemId);
+    console.log(checklist.id);
+
+    console.log(
+      checkitems[checklist.id].find((checkitem) => checkitem.id === checkItemId)
+    );
+
     try {
-      let checkItem = checkItems.find(
+      let checkItem = checkitems[checklist.id].find(
         (checkitem) => checkitem.id === checkItemId
       );
+      console.log(checkItem);
+
       let state = checkItem.state;
       if (state === "complete") {
         let response = await uncheckCheckItemOnCard(
@@ -108,13 +124,7 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
         }
       }
 
-      dispatch({
-        type: CHECK_OR_UNCHECK_CHECKITEM,
-        payload: {
-          state: checkItem.state,
-          checkItemId: checkItem.id,
-        },
-      });
+      dispatch(checkOrUncheckItem(checkItem));
     } catch (error) {
       console.error(error);
       enqueueSnackbar(error.message, {
@@ -125,15 +135,23 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
   }
 
   function calculateProgress() {
-    let total = checkItems.length;
+    let total = checkitems[checklist.id]?.length || 0;
     if (total !== 0) {
-      let completed = checkItems.filter(
+      let completed = checkitems[checklist.id].filter(
         (checkitem) => checkitem.state === "complete"
       ).length;
       let percent = (completed / total) * 100;
       return Math.floor(percent);
     }
   }
+
+  if (error) {
+    enqueueSnackbar(error.message, {
+      variant: "error",
+      autoHideDuration: 3000,
+    });
+  }
+
   return (
     <Box sx={{ overflowY: "scroll", maxHeight: "60vh" }} component={"div"}>
       <Box my={2}>
@@ -151,7 +169,7 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
             sx={{ fontSize: "0.8rem" }}
             onClick={(e) => {
               e.stopPropagation();
-              onDeleteCheckList(checklist.id);
+              onDeleteCheckList(checklist.id, checklist.idCard);
             }}
           >
             delete
@@ -159,7 +177,7 @@ const CheckList = ({ checklist, onDeleteCheckList }) => {
         </Box>
         <CheckItemsProgress progress={calculateProgress()} />
         <FormGroup>
-          {checkItems.map((checkitem) => (
+          {checkitems[checklist.id]?.map((checkitem) => (
             <CheckItem
               key={checkitem.id}
               checkitem={checkitem}

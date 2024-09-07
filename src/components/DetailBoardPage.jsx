@@ -6,53 +6,22 @@ import List from "./List";
 import HomeIcon from "@mui/icons-material/Home";
 import AddComponent from "./AddComponent";
 import DetailPageSkeleton from "./Skeletons/DetailPageSkeleton";
-import {
-  createList,
-  deleteListById,
-  getAllListsInBoard,
-} from "../apis/lists/fetchLists";
+import { createList, deleteListById } from "../apis/lists/fetchLists";
 import { useSnackbar } from "notistack";
-import listsReducer, {
-  ADD_LIST,
-  DELETE_LIST,
-  FETCH_LISTS,
-  FETCH_LISTS_ERROR,
-  FETCH_LISTS_LOADING,
-} from "../reducers/listsReducer";
+
+import { fetchLists, addList, deleteList } from "../features/list/listSlice";
+import { useDispatch, useSelector } from "react-redux";
 
 const DetailBoardPage = () => {
   const { boardId } = useParams();
-  const [lists, dispatch] = useReducer(listsReducer, {
-    loading: false,
-    data: [],
-    error: "",
-  });
+  let { loading, error, lists } = useSelector((state) => state.list);
+  let dispatch = useDispatch();
   const [listName, setListName] = useState("");
 
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    async function fetchLists() {
-      try {
-        dispatch({
-          type: FETCH_LISTS_LOADING,
-        });
-        let response = await getAllListsInBoard(boardId);
-        if (response.status === 200) {
-          let lists = response.data;
-          console.log(lists);
-          dispatch({
-            type: FETCH_LISTS,
-            payload: lists,
-          });
-        } else {
-          throw new Error("something went wrong");
-        }
-      } catch (error) {
-        dispatch({ type: FETCH_LISTS_ERROR, payload: error });
-      }
-    }
-    fetchLists();
+    dispatch(fetchLists(boardId));
   }, [boardId]);
 
   async function handleCreateList() {
@@ -63,10 +32,7 @@ const DetailBoardPage = () => {
       let response = await createList(boardId, listName);
       if (response.status === 200) {
         let list = response.data;
-        dispatch({
-          type: ADD_LIST,
-          payload: list,
-        });
+        dispatch(addList(list));
         setListName("");
       } else {
         throw new Error("something went wrong");
@@ -87,10 +53,7 @@ const DetailBoardPage = () => {
       });
       let response = await deleteListById(listId);
       if (response.status === 200) {
-        dispatch({
-          type: DELETE_LIST,
-          payload: listId,
-        });
+        dispatch(deleteList(listId));
         enqueueSnackbar("Deleted list Successfully", {
           variant: "success",
           autoHideDuration: 3000,
@@ -107,14 +70,14 @@ const DetailBoardPage = () => {
     }
   }
 
-  if (lists.error) {
+  if (error) {
     return <Typography>Something went wrong</Typography>;
   }
 
   return (
     <>
-      {lists.loading && <DetailPageSkeleton />}
-      {!lists.loading && (
+      {loading && <DetailPageSkeleton />}
+      {!loading && (
         <Box>
           <Link to={"/boards"}>
             <Button variant="contained" sx={{ mt: 4, ml: 4 }}>
@@ -134,7 +97,7 @@ const DetailBoardPage = () => {
               scrollbarWidth: "none",
             }}
           >
-            {lists.data.map((list) => (
+            {lists.map((list) => (
               <List list={list} key={list.id} onDeleteList={handleDeleteList} />
             ))}
             <AddComponent
